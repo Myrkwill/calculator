@@ -439,9 +439,13 @@ namespace Project1 {
 		double eps = (Convert::ToDouble(accuracyTextBox->Text));
 		int method = methodComboBox -> SelectedIndex;
 		EquationData data(func, left, right, eps, method);
-	
-		double x = solve(data);
-		answerTextBox->Text = Convert::ToString(x);
+		try {
+			double x = solve(data);
+			answerTextBox->Text = Convert::ToString(x);
+		} catch (const char* msg) {
+			answerTextBox->Text = Convert::ToString(msg);
+		}
+		
 	}
 
 	private: System::Void x1TextBox_KeyPress(System::Object^ sender, System::Windows::Forms::KeyPressEventArgs^ e) {

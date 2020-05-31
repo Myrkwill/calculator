@@ -1,4 +1,5 @@
 #include "iostream"
+#include "fstream"
 
 using namespace std;
 
@@ -37,12 +38,30 @@ public:
         case newton: method = newton; break;
         case iter: method = iter; break;
         }
+
+        fstream fsout("test.txt", ios::out);
+        fsout.close();
+        fstream fs;
+        fs.open("test.txt", fstream::in | fstream::app);
+        if (fs.is_open()) {
+            fs << "(" << func.x1 << ")*x^2 + (" << func.x2 << ")*x + (" << func.x3 << ")" << endl;
+            fs << "[" << left << " : " << right << "]" << endl;
+            fs << "eps = " << eps << endl;
+        }
     }
 };
 
 double findNewton(EquationData);
 double findDiv(EquationData);
 double findIter(EquationData);
+void save(double x);
+
+void save(double x) {
+    fstream fs;
+    fs.open("test.txt", fstream::in | fstream::app);
+    if(fs.is_open()) fs << x << endl;
+    fs.close();
+}
 
 double solve(EquationData data) {
     double x;
@@ -60,7 +79,10 @@ double equation(FunctionData func, double x) {
 }
 
 double derivative(FunctionData func, double x) {
-    return 2 * func.x1 * x + func.x2;
+    double h, fc;
+    h = 0.1; // шаг, с которым вычисляем производную
+    fc = (equation(func, x + h) - equation(func, x - h)) / (2 * h); // центральная
+    return fc;
 }
 
 double findNewton(EquationData data) {
@@ -74,6 +96,7 @@ double findNewton(EquationData data) {
         f = equation(func, x);
         df = derivative(func, x);
         x = x - f / df;
+        save(x);
         iter++;
     } while (fabs(x - x0) > data.eps && iter < 20000);
 
@@ -82,13 +105,20 @@ double findNewton(EquationData data) {
 
 double findDiv(EquationData data) {
     FunctionData func = data.func;
+
     double x = 0;
     int iter = 0;
-    while ((data.right - data.left) > data.eps && iter < 20000) {
-        x = (data.left + data.right) / 2;
-        if (equation(func, data.right) * equation(func, x) < 0) data.left = x;
-        else data.right = x;
-        iter++;
+    if (equation(func, data.right) * equation(func, data.left) > 0) {
+        while ((data.right - data.left) > data.eps && iter < 20000) {
+            x = (data.left + data.right) / 2;
+            save(x);
+            if (equation(func, data.right) * equation(func, x) < 0) data.left = x;
+            else data.right = x;
+            iter++;
+        }
+    }
+    else {
+        throw "Нет корней";
     }
 
     return x;
@@ -96,16 +126,16 @@ double findDiv(EquationData data) {
 
 double findIter(EquationData data) {
     FunctionData func = data.func;
-    double df;
-    double x = data.right;
-    double rez = 0;
+    double x0;
+    double x = (fabs(data.right) - fabs(data.left)) / 2;
     int iter = 0;
     do {
-        rez = x;
-        df = derivative(func, x);
-        x = x - ((1 / df) * equation(func, x));
+        x0 = x;
+        x = x0 - 0.2 * equation(func, x0);
+        save(x);
         iter++;
-    } while (fabs(rez - x) > data.eps && iter < 20000);
+    } while (fabs(x0 - x) > data.eps && iter < 20);
 
     return x;
 }
+
